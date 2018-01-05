@@ -1,0 +1,222 @@
+---
+title: "Exploring the BRFSS data"
+author: gdolwell
+date: 5 January, 2018
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+```
+
+### Load data
+
+Make sure your data and R Markdown files are in the same directory. When loaded
+your data file will be called `brfss2013`. Delete this note when before you submit 
+your work. 
+
+```{r load-data}
+load("brfss2013.RData")
+```
+
+
+
+* * *
+
+## Part 1: Data
+From "https://cdc.gov/brfss":
+"The Behavioral Risk Factor Surveillance System (BRFSS) is the nation's premier system of health-related telephone surveys that collect state data about U.S. residents regarding their health-related risk behaviors, chronic health conditions, and use of preventive services. Established in 1984 with 15 states, BRFSS now collects data in all 50 states as well as the District of Columbia and three U.S. territories. BRFSS completes more than 400,000 adult interviews each year, making it the largest continuously conducted health survey system in the world."
+
+This data set will not allow for the establishment of causality. This is because it suffers from the lack of true randomization due to volunteer bias. The right censorship, those who did not finish the survey, will thus be the focus of this exploratory data analysis.
+
+The survey, from my perspective, was exceedingly long and arduous. I would have hung up. Thus my question will be centered around those who hung up and their characteristics.
+
+We will start with the loading and manipulation of the dataset in preparation for anaylsis.
+
+```{r data-prep}
+setwd("~/Code/R/stats_with_R/intro_prob_data/M1project/")
+load("brfss2013.RData")
+br.df <- as.data.frame(brfss2013)
+rm(brfss2013)
+```
+
+From the codebook the variables of interest to us are:
+* sex : gender of respondent
+* _ageg5yr : reported age in 5 year categories
+* dispcode : did the respondent complete the interview
+
+```{r variable-selection}
+br.df <- br.df %>% select(sex, X_ageg5yr, dispcode)
+colnames(br.df)[1:3] <- c("gender", "age", "completed")
+colnames(br.df)
+```
+
+
+
+* * *
+
+## Part 2: Research questions
+
+### Question 1: Complete cases
+How many cases are there? Of those, how many actually completed the survey?
+
+
+### Question 2:
+Is there a difference among genders for those who completed the survey?
+
+### Question 3:
+Does age play a factor in the completion of the survey? 
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+NOTE: Insert code chunks as needed by clicking on the "Insert a new code chunk" 
+button (green button with orange arrow) above. Make sure that your code is visible
+in the project you submit. Delete this note when before you submit your work.
+
+###Research quesion 1:
+
+```{r complete_cases}
+l <- length(br.df[, 1]) # number of repsondents
+c <- sum(br.df[, 3] != "Completed interview", na.rm = T) # not complete
+c
+l
+c/l #proportion who did not finsih interview
+mosaicplot(c(l, c), main = "Completed vs Incomplete")
+```
+
+We can see from the output that there were 491775 total people who picked up the phone, of those 58548 did not finish the whole survey or approximately 12%. This does not surprise me, and validates my suspisions.
+
+##Research quesion 2:
+
+```{r gender}
+#subset br.df by gender
+br.n <- br.df[ , 1] == "Male" # logical list Male = True
+br.m <- br.df[br.n, ] # select those that are male
+br.f <- br.df[!br.n, ] # selcet those that ar female
+length(br.f[ , 1])
+length(br.m[ ,1])
+sum(is.na(br.df$gender))
+length(br.f[ , 1]) /(length(br.f[ , 1]) + length(br.m[ , 1]))
+```
+
+
+We see that there are 290462 females (59%) represented and 201320 males (41%), and 7 NAs.
+
+
+Now that the dataset has been subsetted by gender lets look at the question.
+Ladies first:
+
+
+```{r females}
+lf <- length(br.f[, 1]) #number of female repsondents
+cf <- sum(br.df[ , 3] != "Completed interview", na.rm = T) #number of complete female interviews
+lf
+cf
+cf / lf
+```
+
+From the data we see that of the 290462, 58458 females did not complete the survey, about 20%.
+
+Now the Males:
+```{r males}
+lm <- length(br.m[, 1]) #number of female repsondents
+cm <- sum(br.m[ , 3] != "Completed interview", na.rm = T) #number of complete male interviews
+lm
+cm
+cm / lm
+```
+
+
+Surprisingly, the males finished more surveys than the females. Of the 201320 male respondents, 26090 completted the survey, about 13%.
+
+
+```{r gender_plots}
+par(mfrow = c(1,2))
+barplot(c(cm / (cm+lm), lm / (cm +lm)), main = "Males")
+barplot(c(cf / (cf+lf), lf / (cf +lf)), main = "Females")
+```
+
+
+
+###Research quesion 3:
+
+```{r age_breakdown}
+summary(br.df$age)
+plot(br.df$age)
+```
+
+So we can see at the onset there are 4730 NA's with regard to age.
+
+Lets partition by age.
+
+```{r age_analysis}
+br.a <- br.df[is.na(br.df$age) == FALSE, ] #remove all age = NA
+a18.24 <- (br.a[(br.a$age == "Age 18 to 24"), ])
+a25.29 <- (br.a[(br.a$age == "Age 25 to 29"), ])
+a30.34 <- (br.a[(br.a$age == "Age 30 to 34"), ])
+a35.39 <- (br.a[(br.a$age == "Age 35 to 39"), ])
+a40.44 <- (br.a[(br.a$age == "Age 40 to 44"), ])
+a45.49 <- (br.a[(br.a$age == "Age 45 to 49"), ])
+a50.54 <- (br.a[(br.a$age == "Age 50 to 54"), ])
+a55.59 <- (br.a[(br.a$age == "Age 55 to 59"), ])
+a60.64 <- (br.a[(br.a$age == "Age 60 to 64"), ])
+a65.69 <- (br.a[(br.a$age == "Age 65 to 69"), ])
+a70.74 <- (br.a[(br.a$age == "Age 70 to 74"), ])
+a75.79 <- (br.a[(br.a$age == "Age 75 to 79"), ])
+a80 <- (br.a[(br.a$age == "Age 80 or older"), ])
+```
+
+Now the proportion of completed interviews by age.
+
+```{r age_complete}
+c.age = data.frame(a18.24 = numeric(0), a25.30 = numeric(0), a31.34 =
+                     numeric(0), a35.39 = numeric(0), a40.44 = 
+                     numeric(0), a45.49 = numeric(0), a50.54 =
+                     numeric(0), a55.59 = numeric(0), a60.64 =
+                     numeric(0), a65.69 = numeric(0), a70.74 =
+                     numeric(0), a75.79 = numeric(0), a80 = numeric(0))
+
+c.age[1,1] <- sum(a18.24$completed == "Completed interview") /
+  length(a18.24[,1])
+c.age[1,2] <- sum(a25.29$completed == "Completed interview") /
+  length(a25.29[,1])
+c.age[1,3] <- sum(a30.34$completed == "Completed interview") /
+  length(a30.34[,1])
+c.age[1,4] <- sum(a35.39$completed == "Completed interview") /
+  length(a35.39[,1])
+c.age[1,5] <- sum(a40.44$completed == "Completed interview") /
+  length(a40.44[,1])
+c.age[1,6] <- sum(a45.49$completed == "Completed interview") /
+  length(a45.49[,1])
+c.age[1,7] <- sum(a50.54$completed == "Completed interview") /
+  length(a50.54[,1])
+c.age[1,8] <- sum(a55.59$completed == "Completed interview") /
+  length(a55.59[,1])
+c.age[1,9] <- sum(a60.64$completed == "Completed interview") /
+  length(a60.64[,1])
+c.age[1,10] <- sum(a65.69$completed == "Completed interview") /
+  length(a65.69[,1])
+c.age[1, 11] <- sum(a70.74$completed == "Completed interview") /
+  length(a70.74[,1])
+c.age[1,12] <- sum(a75.79$completed == "Completed interview") /
+  length(a75.79[,1])
+c.age[1,13] <- sum(a80$completed == "Completed interview") /
+  length(a80[,1])
+new <- melt(c.age)
+new
+plot(new)
+```
+
+The graph shows that 18 to 24 year olds are more willing to complete the survey, and as the respondents age increases so does their apparent willingness to complete the survey. This trend reverses slightly at age 70. 
